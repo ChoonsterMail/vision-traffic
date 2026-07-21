@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionTraffic - Nhận Dạng Phương Tiện Giao Thông Bằng AI</title>
+    <meta name="description" content="Hệ thống thị giác máy tính nhận dạng phương tiện giao thông tự động sử dụng YOLOv8 - Phân tích video với AI">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- ═══════════════════════════════════════════════════════
+         Header
+         ═══════════════════════════════════════════════════════ -->
+    <header class="header">
+        <div class="header-bg"></div>
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">
+                    <span>🚗</span>
+                </div>
+                <div class="logo-text">
+                    <h1>Vision<span class="accent">Traffic</span></h1>
+                    <p class="tagline">Hệ thống AI nhận dạng phương tiện giao thông</p>
+                </div>
+            </div>
+            <div class="header-badge">
+                <span class="badge-dot"></span>
+                <span>YOLOv8 • OpenCV</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════════
+         Main Content
+         ═══════════════════════════════════════════════════════ -->
+    <main class="main-container">
+
+        <!-- ── Upload Section ────────────────────────────── -->
+        <section id="upload-section" class="section active">
+            <div class="section-header">
+                <h2>📹 Tải lên video giao thông</h2>
+                <p>Hệ thống sẽ tự động phát hiện và phân loại các phương tiện</p>
+            </div>
+
+            <!-- Drop Zone -->
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-zone-content">
+                    <div class="upload-icon-wrapper">
+                        <div class="upload-icon-ring"></div>
+                        <div class="upload-icon">📹</div>
+                    </div>
+                    <h3>Kéo & thả video vào đây</h3>
+                    <p class="drop-subtitle">hoặc</p>
+                    <label for="file-input" class="btn btn-primary" id="browse-btn">
+                        <span class="btn-icon">📂</span>
+                        Chọn file từ máy tính
+                    </label>
+                    <input type="file" id="file-input" accept="video/*" hidden>
+                    <p class="upload-hint">
+                        Hỗ trợ: MP4, AVI, MOV, MKV, WebM &bull; Tối đa 500MB
+                    </p>
+                </div>
+            </div>
+
+            <!-- File Preview (shown after file selected) -->
+            <div id="file-preview" class="file-preview hidden">
+                <div class="file-info">
+                    <div class="file-icon-wrapper">
+                        <span class="file-icon">🎬</span>
+                    </div>
+                    <div class="file-details">
+                        <span id="file-name" class="file-name">video.mp4</span>
+                        <span id="file-size" class="file-size">12.5 MB</span>
+                    </div>
+                    <button id="remove-file" class="btn-icon" title="Xóa file">
+                        <span>✕</span>
+                    </button>
+                </div>
+                <div id="upload-progress-container" class="progress-container hidden">
+                    <div class="progress-bar">
+                        <div id="upload-progress-fill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <span id="upload-progress-text" class="progress-text">0%</span>
+                </div>
+                <button id="start-analysis" class="btn btn-primary btn-large">
+                    <span class="btn-icon">🔍</span>
+                    Bắt đầu phân tích
+                </button>
+            </div>
+
+            <!-- Error Message -->
+            <div id="upload-error" class="error-message hidden">
+                <span class="error-icon">⚠️</span>
+                <span id="error-text"></span>
+            </div>
+
+            <!-- Vehicle Types Info -->
+            <div class="vehicle-types">
+                <h3>🎯 Phương tiện được nhận dạng</h3>
+                <div class="vehicle-grid">
+                    <div class="vehicle-card" style="--card-accent: #10b981">
+                        <span class="vehicle-emoji">🚗</span>
+                        <span class="vehicle-name">Ô tô</span>
+                    </div>
+                    <div class="vehicle-card" style="--card-accent: #3b82f6">
+                        <span class="vehicle-emoji">🏍️</span>
+                        <span class="vehicle-name">Xe máy</span>
+                    </div>
+                    <div class="vehicle-card" style="--card-accent: #f59e0b">
+                        <span class="vehicle-emoji">🚌</span>
+                        <span class="vehicle-name">Xe bus</span>
+                    </div>
+                    <div class="vehicle-card" style="--card-accent: #ef4444">
+                        <span class="vehicle-emoji">🚛</span>
+                        <span class="vehicle-name">Xe tải</span>
+                    </div>
+                    <div class="vehicle-card" style="--card-accent: #8b5cf6">
+                        <span class="vehicle-emoji">🚲</span>
+                        <span class="vehicle-name">Xe đạp</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Processing Section ────────────────────────── -->
+        <section id="processing-section" class="section hidden">
+            <div class="processing-card">
+                <div class="processing-visual">
+                    <div class="pulse-ring ring-1"></div>
+                    <div class="pulse-ring ring-2"></div>
+                    <div class="pulse-ring ring-3"></div>
+                    <div class="processing-icon">🧠</div>
+                </div>
+
+                <h2>Đang phân tích video...</h2>
+                <p id="processing-status" class="processing-status">
+                    Đang khởi tạo mô hình AI
+                </p>
+
+                <div class="progress-container large">
+                    <div class="progress-bar large">
+                        <div id="processing-progress" class="progress-fill shimmer" style="width: 0%"></div>
+                    </div>
+                    <span id="progress-percent" class="progress-text large">0%</span>
+                </div>
+
+                <div class="processing-steps">
+                    <div id="step-init" class="step active">
+                        <span class="step-icon">⚙️</span>
+                        <span>Khởi tạo</span>
+                    </div>
+                    <div class="step-line"></div>
+                    <div id="step-detect" class="step">
+                        <span class="step-icon">🔍</span>
+                        <span>Phát hiện</span>
+                    </div>
+                    <div class="step-line"></div>
+                    <div id="step-annotate" class="step">
+                        <span class="step-icon">🎨</span>
+                        <span>Chú thích</span>
+                    </div>
+                    <div class="step-line"></div>
+                    <div id="step-export" class="step">
+                        <span class="step-icon">📦</span>
+                        <span>Xuất kết quả</span>
+                    </div>
+                </div>
+
+                <div class="processing-tip">
+                    <span>💡</span>
+                    <span>YOLOv8 đang phân tích từng khung hình để phát hiện phương tiện</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Results Section ────────────────────────────── -->
+        <section id="results-section" class="section hidden">
+
+            <!-- Results Header -->
+            <div class="results-header">
+                <div>
+                    <h2>📊 Kết quả phân tích</h2>
+                    <p class="results-subtitle">Phân tích hoàn tất! Xem chi tiết bên dưới.</p>
+                </div>
+                <button id="new-analysis" class="btn btn-outline">
+                    <span class="btn-icon">📹</span>
+                    Phân tích video mới
+                </button>
+            </div>
+
+            <!-- Summary Stats Cards -->
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card" style="--stat-accent: #00d4ff">
+                    <div class="stat-icon-wrapper">
+                        <span class="stat-icon">🎯</span>
+                    </div>
+                    <div class="stat-body">
+                        <div class="stat-value" id="stat-total-detections">0</div>
+                        <div class="stat-label">Tổng phát hiện</div>
+                    </div>
+                </div>
+                <div class="stat-card" style="--stat-accent: #10b981">
+                    <div class="stat-icon-wrapper">
+                        <span class="stat-icon">🚗</span>
+                    </div>
+                    <div class="stat-body">
+                        <div class="stat-value" id="stat-vehicle-types">0</div>
+                        <div class="stat-label">Loại phương tiện</div>
+                    </div>
+                </div>
+                <div class="stat-card" style="--stat-accent: #f59e0b">
+                    <div class="stat-icon-wrapper">
+                        <span class="stat-icon">⏱️</span>
+                    </div>
+                    <div class="stat-body">
+                        <div class="stat-value" id="stat-duration">0s</div>
+                        <div class="stat-label">Thời lượng</div>
+                    </div>
+                </div>
+                <div class="stat-card" style="--stat-accent: #8b5cf6">
+                    <div class="stat-icon-wrapper">
+                        <span class="stat-icon">📐</span>
+                    </div>
+                    <div class="stat-body">
+                        <div class="stat-value" id="stat-resolution">-</div>
+                        <div class="stat-label">Độ phân giải</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video + Bar Chart Row -->
+            <div class="results-row">
+                <div class="result-panel video-panel">
+                    <div class="panel-header">
+                        <h3>🎥 Video kết quả</h3>
+                    </div>
+                    <div class="video-container">
+                        <video id="result-video" controls preload="metadata">
+                            <source src="" type="video/mp4">
+                            Trình duyệt không hỗ trợ video.
+                        </video>
+                    </div>
+                </div>
+
+                <div class="result-panel chart-panel">
+                    <div class="panel-header">
+                        <h3>📊 Số lượng phương tiện</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="bar-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pie Chart + Confidence Row -->
+            <div class="results-row">
+                <div class="result-panel">
+                    <div class="panel-header">
+                        <h3>🥧 Tỷ lệ phân bố</h3>
+                    </div>
+                    <div class="chart-container pie-container">
+                        <canvas id="pie-chart"></canvas>
+                        <div id="pie-legend" class="pie-legend"></div>
+                    </div>
+                </div>
+
+                <div class="result-panel">
+                    <div class="panel-header">
+                        <h3>🎯 Độ tin cậy trung bình</h3>
+                    </div>
+                    <div id="confidence-bars" class="confidence-bars"></div>
+                </div>
+            </div>
+
+            <!-- Detection Detail Table -->
+            <div class="result-panel full-width">
+                <div class="panel-header">
+                    <h3>📋 Chi tiết phát hiện</h3>
+                </div>
+                <div class="table-container">
+                    <table id="detection-table">
+                        <thead>
+                            <tr>
+                                <th>Phương tiện</th>
+                                <th>Số lượng</th>
+                                <th>Tỷ lệ</th>
+                                <th>Độ tin cậy TB</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detection-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════════
+         Footer
+         ═══════════════════════════════════════════════════════ -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p class="footer-title">
+                <span>🚗</span> VisionTraffic &bull; Nhận dạng phương tiện giao thông bằng AI
+            </p>
+            <p class="footer-tech">Powered by YOLOv8 &bull; OpenCV &bull; Flask</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
